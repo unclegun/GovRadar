@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { getAwardsData } from '../api/spendingApi'
-import { DataSourceBadge } from '../components/ui/DataSourceBadge'
 import { Card } from '../components/ui/Card'
 import { LoadingState } from '../components/ui/LoadingState'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -10,7 +9,6 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 export function AgencyIntelligencePage() {
   const [keyword, setKeyword] = useState('')
   const [agency, setAgency] = useState('')
-  const [useMock, setUseMock] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [insight, setInsight] = useState(null)
@@ -22,12 +20,10 @@ export function AgencyIntelligencePage() {
     setLoading(true)
     setError('')
     try {
-      const payload = await getAwardsData({ keyword, agency }, useMock)
+      const payload = await getAwardsData({ keyword, agency })
       setInsight(payload)
     } catch (err) {
-      setError(
-        `${err.message || 'Unable to load intelligence data.'} If blocked in-browser, switch to Mock mode.`,
-      )
+      setError(err.message || 'Unable to load intelligence data.')
       setInsight(null)
     } finally {
       setLoading(false)
@@ -56,12 +52,11 @@ export function AgencyIntelligencePage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between">
+      <header className="page-header flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Agency Intelligence</h1>
-          <p className="text-sm text-slate-600">Analyze agency buying patterns and vendor concentration.</p>
+          <h1 className="page-title">Agency Intelligence</h1>
+          <p className="page-subtitle">Analyze agency buying patterns and vendor concentration.</p>
         </div>
-        <DataSourceBadge useMock={useMock} />
       </header>
 
       <Card>
@@ -69,13 +64,13 @@ export function AgencyIntelligencePage() {
           <input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            className="rounded border border-slate-300 px-3 py-2 text-sm md:col-span-2"
+            className="input-modern md:col-span-2"
             placeholder="Keyword (e.g., dashboard, cloud, PMO)"
           />
           <select
             value={agency}
             onChange={(event) => setAgency(event.target.value)}
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
+            className="input-modern"
           >
             <option value="">All Agencies</option>
             {agencies.map((agencyName) => (
@@ -85,11 +80,8 @@ export function AgencyIntelligencePage() {
             ))}
           </select>
           <div className="flex gap-2">
-            <button type="button" onClick={run} className="rounded bg-brand-800 px-4 py-2 text-sm font-semibold text-white">
+            <button type="button" onClick={run} className="btn-primary">
               Analyze
-            </button>
-            <button type="button" onClick={() => setUseMock((prev) => !prev)} className="rounded border border-slate-300 px-3 py-2 text-sm">
-              {useMock ? 'Try Live' : 'Use Mock'}
             </button>
           </div>
         </div>
@@ -155,24 +147,24 @@ export function AgencyIntelligencePage() {
 
           <Card title="Award Summary Rows">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-slate-100">
+              <table className="table-modern">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2">Agency</th>
-                    <th className="px-3 py-2">Vendor</th>
-                    <th className="px-3 py-2">NAICS</th>
-                    <th className="px-3 py-2">Award Date</th>
-                    <th className="px-3 py-2">Source</th>
+                    <th>Agency</th>
+                    <th>Vendor</th>
+                    <th>NAICS</th>
+                    <th>Award Date</th>
+                    <th>Source</th>
                   </tr>
                 </thead>
                 <tbody>
                   {insight.rows.map((row) => (
-                    <tr key={row.id} className="border-t border-slate-100">
-                      <td className="px-3 py-2">{row.agency}</td>
-                      <td className="px-3 py-2">{row.vendor}</td>
-                      <td className="px-3 py-2">{row.naics}</td>
-                      <td className="px-3 py-2">{row.awardDate}</td>
-                      <td className="px-3 py-2">
+                    <tr key={row.id}>
+                      <td>{row.agency}</td>
+                      <td>{row.vendor}</td>
+                      <td>{row.naics}</td>
+                      <td>{row.awardDate}</td>
+                      <td>
                         <a
                           href={row.sourceUrl}
                           target="_blank"

@@ -1,5 +1,9 @@
 # StrataStack Contract Radar
 
+[![Deploy Vite App to GitHub Pages](https://github.com/unclegun/GovRadar/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/unclegun/GovRadar/actions/workflows/deploy-pages.yml)
+
+Live Site: https://unclegun.github.io/GovRadar/
+
 Frontend-only MVP web app for small businesses, consultants, and subcontractors tracking U.S. government contracting opportunities.
 
 Built with React + Vite + plain JavaScript + Tailwind CSS, with all persistence in localStorage.
@@ -26,9 +30,11 @@ Built with React + Vite + plain JavaScript + Tailwind CSS, with all persistence 
 
 ## Data Strategy
 
-- App is functional by default in mock mode.
-- `src/api/samApi.js` and `src/api/spendingApi.js` define adapter boundaries for mock/live swapping.
-- Live SAM mode can be enabled with `VITE_SAM_API_KEY`, but mock remains the default for reliability.
+- App uses live federal data sources only.
+- `src/api/samApi.js` integrates with SAM.gov opportunities.
+- `src/api/spendingApi.js` integrates with USAspending award search.
+- Add `VITE_SAM_API_KEY` in `.env.local` for SAM.gov access.
+- USAspending live mode does not require an API key; the app uses contract award types (`A`, `B`, `C`, `D`) to satisfy API validation rules.
 
 ## Local Development
 
@@ -71,10 +77,10 @@ npm run preview
 
 ```text
 src/
-	api/                # data adapters (SAM / spending)
+	api/                # live data adapters (SAM / spending)
 	components/         # layout and reusable UI
 	constants/          # shared constants (storage keys)
-	data/               # mock datasets and seeded defaults
+	data/               # reference lists and seeded defaults
 	hooks/              # localStorage-backed domain hooks
 	pages/              # top-level route pages
 	services/           # storage wrappers
@@ -85,18 +91,32 @@ src/
 
 This project uses hash-based routing so deep links work on GitHub Pages without server rewrites.
 
-1. Ensure repository name is correct on GitHub (example: `GovRadar`).
-2. Commit and push code to default branch.
-3. Deploy:
+### Recommended (GitHub Actions)
+
+1. Commit and push to `main`.
+2. In GitHub repo settings:
+	- Pages -> Build and deployment -> Source: `GitHub Actions`
+3. The workflow `.github/workflows/deploy-pages.yml` builds and publishes `dist` automatically.
+
+### Manual (optional)
+
+You can still deploy manually with:
 
 ```bash
 npm run deploy
 ```
 
-4. In GitHub repository settings, configure Pages source to `gh-pages` branch if needed.
+If using manual deploy, set Pages source to `gh-pages` branch.
+
+### If You See 404 for `/src/main.jsx`
+
+GitHub Pages is serving source files instead of the Vite build output. Fix by switching Pages source to either:
+
+- `GitHub Actions` (recommended), or
+- `gh-pages` branch when using `npm run deploy`
 
 ## Future Backend Extension Path
 
-- Replace mock adapters in `src/api/*.js` with authenticated API clients.
+- Replace live public API adapters in `src/api/*.js` with authenticated API clients.
 - Keep page and component contracts unchanged by preserving normalized record shape.
 - Move persistence from localStorage hooks to service APIs progressively by domain.

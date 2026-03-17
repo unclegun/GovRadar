@@ -4,11 +4,11 @@ import { Sidebar } from './Sidebar'
 
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="app-shell-bg min-h-screen text-slate-900">
       <MobileNav />
-      <div className="mx-auto flex max-w-[1600px] lg:min-h-screen">
+      <div className="content-wrap flex lg:min-h-screen">
         <Sidebar />
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 pb-10 md:p-6 md:pb-12">
           <Outlet />
         </main>
       </div>

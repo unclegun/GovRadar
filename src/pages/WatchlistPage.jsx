@@ -39,15 +39,15 @@ export function WatchlistPage() {
 
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold">Watchlist</h1>
-        <p className="text-sm text-slate-600">Manage saved opportunities and pursuit decisions.</p>
+      <header className="page-header">
+        <h1 className="page-title">Watchlist</h1>
+        <p className="page-subtitle">Manage saved opportunities and pursuit decisions.</p>
       </header>
 
       <Card>
         <div className="grid gap-2 md:grid-cols-4">
           <select
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
+            className="input-modern"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
           >
@@ -58,7 +58,7 @@ export function WatchlistPage() {
             ))}
           </select>
           <input
-            className="rounded border border-slate-300 px-3 py-2 text-sm md:col-span-2"
+            className="input-modern md:col-span-2"
             placeholder="Search saved opportunities"
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
@@ -66,7 +66,7 @@ export function WatchlistPage() {
           <button
             type="button"
             onClick={() => exportToCsv('watchlist.csv', exportRows)}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
+            className="btn-primary"
           >
             Export CSV
           </button>
@@ -87,7 +87,7 @@ export function WatchlistPage() {
               <p className="mb-3 text-sm font-semibold text-brand-800">Fit Score: {item.fitScore ?? 'N/A'}</p>
               <div className="grid gap-3 md:grid-cols-4">
                 <select
-                  className="rounded border border-slate-300 px-3 py-2 text-sm"
+                  className="input-modern"
                   value={item.status}
                   onChange={(event) => updateItem(item.id, { status: event.target.value })}
                 >
@@ -109,7 +109,7 @@ export function WatchlistPage() {
 
                 <input
                   type="date"
-                  className="rounded border border-slate-300 px-3 py-2 text-sm"
+                  className="input-modern"
                   value={item.reminderDate || ''}
                   onChange={(event) => updateItem(item.id, { reminderDate: event.target.value })}
                 />
@@ -117,13 +117,13 @@ export function WatchlistPage() {
                 <button
                   type="button"
                   onClick={() => removeItem(item.id)}
-                  className="rounded border border-red-300 px-3 py-2 text-sm text-red-700"
+                  className="rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   Remove
                 </button>
               </div>
               <textarea
-                className="mt-3 w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                className="input-modern mt-3"
                 rows={3}
                 value={item.notes}
                 onChange={(event) => updateItem(item.id, { notes: event.target.value })}

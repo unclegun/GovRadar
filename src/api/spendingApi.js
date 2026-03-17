@@ -1,5 +1,3 @@
-import { mockAwards } from '../data/mockAwards'
-
 function buildSearchUrl(query) {
   const q = encodeURIComponent(query || 'federal awards')
   return `https://www.usaspending.gov/search?query=${q}`
@@ -38,53 +36,149 @@ function summarizeByCount(items, key) {
     .sort((a, b) => b.count - a.count)
 }
 
-export async function getAwardsData({ keyword = '', agency = '' }, useMock = true) {
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const agencyAliases = {
+  gsa: ['general services administration', 'u s general services administration', 'gsa'],
+  epa: ['environmental protection agency', 'u s environmental protection agency', 'epa'],
+  hud: ['department of housing and urban development', 'u s department of housing and urban development', 'hud'],
+  faa: ['federal aviation administration', 'u s federal aviation administration', 'faa'],
+  noaa: ['national oceanic and atmospheric administration', 'noaa'],
+  irs: ['internal revenue service', 'irs'],
+  usda: ['department of agriculture', 'u s department of agriculture', 'usda'],
+  'department of veterans affairs': ['department of veterans affairs', 'department of veteran affairs'],
+}
+
+const usaspendingAgencyFilters = {
+  gsa: { tier: 'toptier', name: 'General Services Administration' },
+  epa: { tier: 'toptier', name: 'Environmental Protection Agency' },
+  hud: { tier: 'toptier', name: 'Department of Housing and Urban Development' },
+  faa: { tier: 'subtier', name: 'Federal Aviation Administration' },
+  noaa: { tier: 'subtier', name: 'National Oceanic and Atmospheric Administration' },
+  irs: { tier: 'subtier', name: 'Internal Revenue Service' },
+  usda: { tier: 'toptier', name: 'Department of Agriculture' },
+}
+
+function getAgencyFilter(selectedAgency) {
+  if (!selectedAgency) return null
+
+  const selected = normalizeText(selectedAgency)
+  const mapped = usaspendingAgencyFilters[selected]
+  if (mapped) {
+    return {
+      type: 'awarding',
+      tier: mapped.tier,
+      name: mapped.name,
+    }
+  }
+
+  return {
+    type: 'awarding',
+    tier: 'toptier',
+    name: selectedAgency,
+  }
+}
+
+function agencyMatches(agencyValue, selectedAgency) {
+  if (!selectedAgency) return true
+
+  const selected = normalizeText(selectedAgency)
+  const agency = normalizeText(agencyValue)
+  const expanded = agencyAliases[selected] || [selected]
+
+  return expanded.some((candidate) => {
+    const normalizedCandidate = normalizeText(candidate)
+    if (!normalizedCandidate) return false
+
+    // Short aliases (e.g., EPA) should match a full token, not a substring.
+    if (normalizedCandidate.length <= 4 && !normalizedCandidate.includes(' ')) {
+      return agency.split(' ').includes(normalizedCandidate)
+    }
+
+    return agency === normalizedCandidate || agency.includes(normalizedCandidate)
+  })
+}
+
+export async function getAwardsData({ keyword = '', agency = '' }) {
   const normalizedKeyword = keyword.toLowerCase().trim()
+  const hasAgencyFilter = Boolean(agency)
 
-  let records = []
+  const fields = [
+    'Award ID',
+    'Recipient Name',
+    'Award Amount',
+    'Awarding Agency',
+    'Description',
+    'NAICS Code',
+    'Last Modified Date',
+  ]
 
-  if (useMock) {
-    await new Promise((resolve) => setTimeout(resolve, 450))
-    records = mockAwards.map((award) => ({
-      ...award,
-      sourceUrl: buildSearchUrl(`${award.vendor} ${award.agency}`),
-      vendorUrl: buildSearchUrl(award.vendor),
-    }))
-  } else {
+  const maxPages = hasAgencyFilter ? 2 : 1
+  const targetAgencyMatches = hasAgencyFilter ? 25 : 0
+  const seenIds = new Set()
+  const liveRows = []
+  const agencyFilter = getAgencyFilter(agency)
+
+  for (let page = 1; page <= maxPages; page += 1) {
     const response = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fields: [
-          'Award ID',
-          'Recipient Name',
-          'Award Amount',
-          'Awarding Agency',
-          'Description',
-          'NAICS Code',
-          'Last Modified Date',
-        ],
+        fields,
         filters: {
           time_period: [{ start_date: '2024-01-01', end_date: '2026-12-31' }],
-          award_type_codes: ['02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'],
+          // USAspending requires all award type codes to come from a single group.
+          // Use contracts only for this app's federal contracting use case.
+          award_type_codes: ['A', 'B', 'C', 'D'],
+          ...(agencyFilter ? { agencies: [agencyFilter] } : {}),
         },
         sort: 'Award Amount',
         order: 'desc',
-        limit: 120,
-        page: 1,
+        limit: 100,
+        page,
         subawards: false,
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`USAspending request failed (${response.status}).`)
+      let detail = ''
+      try {
+        const errorPayload = await response.json()
+        detail = errorPayload.message || JSON.stringify(errorPayload)
+      } catch {
+        // Fall back to status text when JSON is unavailable.
+        detail = response.statusText || 'Unknown error'
+      }
+      throw new Error(`USAspending request failed (${response.status}): ${detail}`)
     }
 
     const payload = await response.json()
-    records = (payload.results || []).map(normalizeAward)
+    const pageRows = (payload.results || []).map(normalizeAward)
+
+    for (const row of pageRows) {
+      if (seenIds.has(row.id)) continue
+      seenIds.add(row.id)
+      liveRows.push(row)
+    }
+
+    if (!pageRows.length) break
+
+    if (hasAgencyFilter) {
+      const agencyCount = liveRows.filter((row) => agencyMatches(row.agency, agency)).length
+      if (agencyCount >= targetAgencyMatches) break
+    }
   }
+
+  const records = liveRows
 
   const filtered = records.filter((award) => {
     const matchesKeyword =
@@ -92,7 +186,7 @@ export async function getAwardsData({ keyword = '', agency = '' }, useMock = tru
       award.title.toLowerCase().includes(normalizedKeyword) ||
       award.vendor.toLowerCase().includes(normalizedKeyword)
 
-    const matchesAgency = !agency || award.agency === agency
+    const matchesAgency = agencyMatches(award.agency, agency)
     return matchesKeyword && matchesAgency
   })
 

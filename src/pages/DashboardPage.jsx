@@ -41,9 +41,9 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <header className="rounded-xl border border-slate-200 bg-white p-5">
-        <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-600">
+      <header className="page-header">
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-subtitle">
           Daily view of your contracting activity, opportunity mix, and deadlines.
         </p>
       </header>
@@ -60,7 +60,7 @@ export function DashboardPage() {
           {!recent.length && <p className="text-sm text-slate-600">No opportunities saved yet.</p>}
           <ul className="space-y-2">
             {recent.map((item) => (
-              <li key={item.id} className="rounded border border-slate-100 p-2 text-sm">
+              <li key={item.id} className="rounded-lg border border-slate-100 bg-white/80 p-2 text-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium text-slate-900">{item.title}</p>
@@ -79,7 +79,7 @@ export function DashboardPage() {
           {!upcoming.length && <p className="text-sm text-slate-600">No due dates on the radar.</p>}
           <ul className="space-y-2">
             {upcoming.map((item) => (
-              <li key={item.id} className="flex items-center justify-between rounded border border-slate-100 p-2 text-sm">
+              <li key={item.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-white/80 p-2 text-sm">
                 <div>
                   <p className="font-medium">{item.title}</p>
                   <p className="text-slate-600">{formatDate(item.dueDate)}</p>
@@ -96,7 +96,7 @@ export function DashboardPage() {
           {!topAgencies.length && <p className="text-sm text-slate-600">No agency trends yet.</p>}
           <ul className="space-y-1 text-sm">
             {topAgencies.map(([name, count]) => (
-              <li key={name} className="flex justify-between rounded border border-slate-100 p-2">
+              <li key={name} className="flex justify-between rounded-lg border border-slate-100 bg-white/80 p-2">
                 <span>{name}</span>
                 <span className="font-semibold">{count}</span>
               </li>
@@ -108,7 +108,7 @@ export function DashboardPage() {
           {!topNaics.length && <p className="text-sm text-slate-600">No NAICS trends yet.</p>}
           <ul className="space-y-1 text-sm">
             {topNaics.map(([name, count]) => (
-              <li key={name} className="flex justify-between rounded border border-slate-100 p-2">
+              <li key={name} className="flex justify-between rounded-lg border border-slate-100 bg-white/80 p-2">
                 <span>{name}</span>
                 <span className="font-semibold">{count}</span>
               </li>
@@ -118,16 +118,16 @@ export function DashboardPage() {
 
         <Card title="Quick Actions">
           <div className="space-y-2 text-sm">
-            <Link className="block rounded border border-slate-200 p-2 hover:bg-slate-50" to="/search">
+            <Link className="block rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50" to="/search">
               Run Opportunity Search
             </Link>
-            <Link className="block rounded border border-slate-200 p-2 hover:bg-slate-50" to="/pipeline">
+            <Link className="block rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50" to="/pipeline">
               Open Pipeline Board
             </Link>
-            <Link className="block rounded border border-slate-200 p-2 hover:bg-slate-50" to="/prime-finder">
+            <Link className="block rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50" to="/prime-finder">
               Review Prime Candidates
             </Link>
-            <Link className="block rounded border border-slate-200 p-2 hover:bg-slate-50" to="/capability-builder">
+            <Link className="block rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50" to="/capability-builder">
               Update Capability Statement
             </Link>
           </div>

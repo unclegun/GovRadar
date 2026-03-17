@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { searchOpportunities } from '../api/samApi'
-import { DataSourceBadge } from '../components/ui/DataSourceBadge'
 import { EmptyState } from '../components/ui/EmptyState'
 import { LoadingState } from '../components/ui/LoadingState'
 import { OpportunityDetailPanel } from '../components/search/OpportunityDetailPanel'
@@ -13,16 +12,29 @@ import { formatDate } from '../utils/formatters'
 
 const defaultFilters = {
   keyword: '',
-  agency: '',
+  agencies: [],
   naics: '',
   setAside: '',
   postedAfter: '',
   minFitScore: 0,
 }
 
+function normalizeFilters(value = {}) {
+  const agencies = Array.isArray(value.agencies)
+    ? value.agencies
+    : value.agency
+      ? [value.agency]
+      : []
+
+  return {
+    ...defaultFilters,
+    ...value,
+    agencies,
+  }
+}
+
 export function OpportunitySearchPage() {
   const [filters, setFilters] = useState(defaultFilters)
-  const [useMock, setUseMock] = useState(false)
   const [results, setResults] = useState([])
   const [sortBy, setSortBy] = useState({ key: 'fitScore', direction: 'desc' })
   const [loading, setLoading] = useState(false)
@@ -62,12 +74,12 @@ export function OpportunitySearchPage() {
     setError('')
 
     try {
-      const payload = await searchOpportunities(filters, useMock)
+      const payload = await searchOpportunities(filters)
       setResults(payload)
       setVisibleCount(7)
     } catch (err) {
       setError(
-        `${err.message || 'Search failed.'} If live data is blocked in-browser, toggle to Mock Data.`,
+        `${err.message || 'Search failed.'} Live browser access may be blocked by network or CORS policy.`,
       )
       setResults([])
     } finally {
@@ -97,107 +109,121 @@ export function OpportunitySearchPage() {
   }
 
   const applyPreset = (preset) => {
-    setFilters(preset.filters)
+    setFilters(normalizeFilters(preset.filters))
   }
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between">
+      <header className="page-header flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Opportunity Search</h1>
-          <p className="text-sm text-slate-600">Find opportunities and score them against your business profile.</p>
+          <h1 className="page-title">Opportunity Search</h1>
+          <p className="page-subtitle">Find opportunities and score them against your business profile.</p>
         </div>
-        <DataSourceBadge useMock={useMock} />
       </header>
 
-      <section className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-3">
-        <input
-          className="rounded border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Keyword"
-          value={filters.keyword}
-          onChange={(event) => setFilters((prev) => ({ ...prev, keyword: event.target.value }))}
-        />
-        <select
-          className="rounded border border-slate-300 px-3 py-2 text-sm"
-          value={filters.agency}
-          onChange={(event) => setFilters((prev) => ({ ...prev, agency: event.target.value }))}
-        >
-          <option value="">All Agencies</option>
-          {agencies.map((agency) => (
-            <option key={agency} value={agency}>
-              {agency}
-            </option>
-          ))}
-        </select>
-        <select
-          className="rounded border border-slate-300 px-3 py-2 text-sm"
-          value={filters.naics}
-          onChange={(event) => setFilters((prev) => ({ ...prev, naics: event.target.value }))}
-        >
-          <option value="">All NAICS</option>
-          {naicsCodes.map((naics) => (
-            <option key={naics} value={naics}>
-              {naics}
-            </option>
-          ))}
-        </select>
-        <select
-          className="rounded border border-slate-300 px-3 py-2 text-sm"
-          value={filters.setAside}
-          onChange={(event) => setFilters((prev) => ({ ...prev, setAside: event.target.value }))}
-        >
-          <option value="">All Set-Asides</option>
-          {setAsides.map((setAside) => (
-            <option key={setAside} value={setAside}>
-              {setAside}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          className="rounded border border-slate-300 px-3 py-2 text-sm"
-          value={filters.postedAfter}
-          onChange={(event) => setFilters((prev) => ({ ...prev, postedAfter: event.target.value }))}
-        />
-        <input
-          type="number"
-          min="0"
-          max="100"
-          className="rounded border border-slate-300 px-3 py-2 text-sm"
-          value={filters.minFitScore}
-          onChange={(event) => setFilters((prev) => ({ ...prev, minFitScore: event.target.value }))}
-          placeholder="Min fit score"
-        />
+      <section className="panel-modern grid items-start gap-3 p-4 md:grid-cols-3">
+        <label className="block">
+          <span className="field-label">Keyword</span>
+          <input
+            className="input-modern"
+            placeholder="Keyword"
+            value={filters.keyword}
+            onChange={(event) => setFilters((prev) => ({ ...prev, keyword: event.target.value }))}
+          />
+        </label>
+        <div className="space-y-1">
+          <p className="field-label">Agencies</p>
+          <select
+            className="input-modern h-28"
+            multiple
+            value={filters.agencies}
+            onChange={(event) => {
+              const selected = Array.from(event.target.selectedOptions, (option) => option.value)
+              setFilters((prev) => ({ ...prev, agencies: selected }))
+            }}
+          >
+            {agencies.map((agency) => (
+              <option key={agency} value={agency}>
+                {agency}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">Select one or more agencies (Ctrl/Cmd + click for multi-select).</p>
+        </div>
+        <label className="block">
+          <span className="field-label">NAICS</span>
+          <select
+            className="input-modern"
+            value={filters.naics}
+            onChange={(event) => setFilters((prev) => ({ ...prev, naics: event.target.value }))}
+          >
+            <option value="">All NAICS</option>
+            {naicsCodes.map((naics) => (
+              <option key={naics} value={naics}>
+                {naics}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="field-label">Set-Aside</span>
+          <select
+            className="input-modern"
+            value={filters.setAside}
+            onChange={(event) => setFilters((prev) => ({ ...prev, setAside: event.target.value }))}
+          >
+            <option value="">All Set-Asides</option>
+            {setAsides.map((setAside) => (
+              <option key={setAside} value={setAside}>
+                {setAside}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="field-label">Posted After</span>
+          <input
+            type="date"
+            className="input-modern"
+            value={filters.postedAfter}
+            onChange={(event) => setFilters((prev) => ({ ...prev, postedAfter: event.target.value }))}
+          />
+        </label>
+        <label className="block">
+          <span className="field-label">Minimum Fit Score</span>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            className="input-modern"
+            value={filters.minFitScore}
+            onChange={(event) => setFilters((prev) => ({ ...prev, minFitScore: event.target.value }))}
+            placeholder="Min fit score"
+          />
+        </label>
 
-        <div className="flex flex-wrap gap-2 md:col-span-3">
+        <div className="action-wrap md:col-span-3">
           <button
             type="button"
             onClick={runSearch}
-            className="rounded bg-brand-800 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-900"
+            className="btn-primary w-full sm:w-auto"
           >
             Search
-          </button>
-          <button
-            type="button"
-            onClick={() => setUseMock((prev) => !prev)}
-            className="rounded border border-slate-300 px-4 py-2 text-sm"
-          >
-            Toggle to {useMock ? 'Live API' : 'Mock Data'}
           </button>
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section className="panel-modern rounded-2xl border border-slate-200/80 p-4">
         <h2 className="mb-3 text-base font-semibold">Search Presets</h2>
         <div className="grid gap-2 md:grid-cols-3">
           <input
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
+            className="input-modern"
             placeholder="Preset name"
             value={presetName}
             onChange={(event) => setPresetName(event.target.value)}
           />
           <input
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
+            className="input-modern"
             placeholder="Notes"
             value={presetNotes}
             onChange={(event) => setPresetNotes(event.target.value)}
@@ -205,7 +231,7 @@ export function OpportunitySearchPage() {
           <button
             type="button"
             onClick={handlePresetSave}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
+            className="btn-secondary w-full sm:w-auto"
           >
             Save Current Search as Preset
           </button>
@@ -245,8 +271,8 @@ export function OpportunitySearchPage() {
       {!!scoredResults.length && (
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-100 text-slate-700">
+            <table className="table-modern">
+              <thead>
                 <tr>
                   {[
                     ['title', 'Title'],
@@ -255,9 +281,9 @@ export function OpportunitySearchPage() {
                     ['dueDate', 'Due'],
                     ['naics', 'NAICS'],
                     ['setAside', 'Set-Aside'],
-                    ['fitScore', 'Fit Score'],
+                    ['fitScore', 'Fit Score (/100)'],
                   ].map(([key, label]) => (
-                    <th key={key} className="px-3 py-2 font-semibold">
+                    <th key={key}>
                       <button type="button" onClick={() => toggleSort(key)}>
                         {label}
                       </button>
@@ -267,18 +293,20 @@ export function OpportunitySearchPage() {
               </thead>
               <tbody>
                 {visibleResults.map((item) => (
-                  <tr key={item.id} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-3 py-2">
+                  <tr key={item.id} className="hover:bg-slate-50">
+                    <td>
                       <button className="text-left text-brand-800 underline" onClick={() => setSelectedId(item.id)} type="button">
                         {item.title}
                       </button>
                     </td>
-                    <td className="px-3 py-2">{item.agency}</td>
-                    <td className="px-3 py-2">{formatDate(item.postedDate)}</td>
-                    <td className="px-3 py-2">{formatDate(item.dueDate)}</td>
-                    <td className="px-3 py-2">{item.naics}</td>
-                    <td className="px-3 py-2">{item.setAside}</td>
-                    <td className="px-3 py-2 font-semibold text-brand-800">{item.fitScore}</td>
+                    <td>{item.agency}</td>
+                    <td>{formatDate(item.postedDate)}</td>
+                    <td>{formatDate(item.dueDate)}</td>
+                    <td>{item.naics}</td>
+                    <td>{item.setAside}</td>
+                    <td>
+                      <span className="fit-pill">Fit Score: {item.fitScore}/100</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -1,5 +1,3 @@
-import { mockOpportunities } from '../data/mockOpportunities'
-
 function toNumber(value) {
   if (typeof value === 'number') return value
   if (typeof value !== 'string') return null
@@ -39,29 +37,47 @@ function normalizeOpportunity(record) {
   }
 }
 
-function searchMockOpportunities(filters) {
-  const keyword = filters.keyword.toLowerCase().trim()
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
-  return mockOpportunities.filter((item) => {
-    const matchesKeyword =
-      !keyword ||
-      item.title.toLowerCase().includes(keyword) ||
-      item.description.toLowerCase().includes(keyword)
+const agencyAliases = {
+  gsa: ['general services administration', 'gsa'],
+  epa: ['environmental protection agency', 'epa'],
+  hud: ['department of housing and urban development', 'hud'],
+  faa: ['federal aviation administration', 'faa'],
+  noaa: ['national oceanic and atmospheric administration', 'noaa'],
+  irs: ['internal revenue service', 'irs'],
+  usda: ['department of agriculture', 'usda'],
+}
 
-    const matchesAgency = !filters.agency || item.agency === filters.agency
-    const matchesNaics = !filters.naics || item.naics === filters.naics
-    const matchesSetAside = !filters.setAside || item.setAside === filters.setAside
+function getSelectedAgencies(filters) {
+  if (Array.isArray(filters.agencies)) return filters.agencies.filter(Boolean)
+  if (filters.agency) return [filters.agency]
+  return []
+}
 
-    const matchesPostedDate = !filters.postedAfter || new Date(item.postedDate) >= new Date(filters.postedAfter)
+function singleAgencyMatch(itemAgency, selectedAgency) {
+  const normalizedItem = normalizeText(itemAgency)
+  const normalizedSelected = normalizeText(selectedAgency)
+  const aliases = agencyAliases[normalizedSelected] || [normalizedSelected]
 
-    return (
-      matchesKeyword &&
-      matchesAgency &&
-      matchesNaics &&
-      matchesSetAside &&
-      matchesPostedDate
-    )
+  return aliases.some((alias) => {
+    const candidate = normalizeText(alias)
+    if (!candidate) return false
+    return normalizedItem === candidate || normalizedItem.includes(candidate)
   })
+}
+
+function matchesAgencies(itemAgency, filters) {
+  const selectedAgencies = getSelectedAgencies(filters)
+  if (!selectedAgencies.length) return true
+  return selectedAgencies.some((selectedAgency) => singleAgencyMatch(itemAgency, selectedAgency))
 }
 
 async function searchLiveOpportunities(filters) {
@@ -94,7 +110,7 @@ async function searchLiveOpportunities(filters) {
 
   const normalized = records.map(normalizeOpportunity)
   return normalized.filter((item) => {
-    const matchesAgency = !filters.agency || item.agency === filters.agency
+    const matchesAgency = matchesAgencies(item.agency, filters)
     const matchesNaics = !filters.naics || item.naics === filters.naics
     const matchesSetAside = !filters.setAside || item.setAside === filters.setAside
     const matchesPostedDate =
@@ -105,11 +121,6 @@ async function searchLiveOpportunities(filters) {
   })
 }
 
-export async function searchOpportunities(filters, useMock = true) {
-  if (useMock) {
-    await new Promise((resolve) => setTimeout(resolve, 550))
-    return searchMockOpportunities(filters).map(normalizeOpportunity)
-  }
-
+export async function searchOpportunities(filters) {
   return searchLiveOpportunities(filters)
 }

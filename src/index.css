@@ -8,6 +8,10 @@
   :root {
     font-family: 'Source Sans 3', sans-serif;
     color: #0f172a;
+    --surface-1: rgba(255, 255, 255, 0.92);
+    --surface-2: rgba(248, 250, 252, 0.94);
+    --border-soft: rgba(148, 163, 184, 0.35);
+    --shadow-soft: 0 16px 36px rgba(15, 23, 42, 0.08);
     background: radial-gradient(circle at top left, #f5f9ff, #f3f4f6 42%, #eef2f7);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -17,6 +21,7 @@
   body {
     margin: 0;
     min-height: 100vh;
+    line-height: 1.45;
   }
 
   h1,
@@ -24,6 +29,100 @@
   h3 {
     font-family: 'Merriweather', serif;
     letter-spacing: -0.02em;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700/35 focus-visible:ring-offset-2;
+  }
+}
+
+@layer components {
+  .app-shell-bg {
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.12), transparent 30%),
+      radial-gradient(circle at 100% 10%, rgba(14, 165, 233, 0.08), transparent 30%),
+      linear-gradient(to bottom, #eff4fa, #f7f8fb 40%, #eef2f7);
+  }
+
+  .content-wrap {
+    @apply mx-auto w-full max-w-[1360px];
+  }
+
+  .page-header {
+    @apply rounded-2xl border p-4 backdrop-blur md:p-5;
+    border-color: var(--border-soft);
+    background: var(--surface-1);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .page-title {
+    @apply text-xl font-semibold text-slate-900 sm:text-2xl;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm leading-6 text-slate-600;
+  }
+
+  .btn-primary {
+    @apply rounded-lg bg-brand-800 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-brand-900;
+  }
+
+  .btn-secondary {
+    @apply rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50;
+  }
+
+  .btn-ghost {
+    @apply rounded-lg border border-transparent bg-transparent px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100;
+  }
+
+  .input-modern {
+    @apply mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-brand-700;
+  }
+
+  .field-label {
+    @apply text-xs font-semibold uppercase tracking-[0.1em] text-slate-600;
+  }
+
+  .table-modern {
+    @apply min-w-full text-left text-sm;
+  }
+
+  .table-modern thead {
+    @apply bg-slate-100 text-slate-700;
+  }
+
+  .table-modern th {
+    @apply px-3 py-2 font-semibold;
+  }
+
+  .table-modern td {
+    @apply px-3 py-2;
+  }
+
+  .table-modern tbody tr {
+    @apply border-t border-slate-100 align-top;
+  }
+
+  .table-modern tbody tr:nth-child(2n) {
+    @apply bg-slate-50/45;
+  }
+
+  .panel-modern {
+    background-image:
+      radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 55%),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+  }
+
+  .fit-pill {
+    @apply inline-flex rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-800;
+  }
+
+  .action-wrap {
+    @apply flex flex-wrap gap-2;
   }
 }
 
